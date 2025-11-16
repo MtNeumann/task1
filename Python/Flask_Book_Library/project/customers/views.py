@@ -1,11 +1,15 @@
 from flask import render_template, Blueprint, request, redirect, url_for, jsonify
 from project import db
 from project.customers.models import Customer
-
+import html
 
 # Blueprint for customers
 customers = Blueprint('customers', __name__, template_folder='templates', url_prefix='/customers')
 
+def sanitize_input(value):
+    if value is None:
+        return value
+    return html.escape(value, quote=True)
 
 # Route to display customers in HTML
 @customers.route('/', methods=['GET'])
@@ -35,7 +39,11 @@ def create_customer():
         print('Invalid form data')
         return jsonify({'error': 'Invalid form data'}), 400
 
-    new_customer = Customer(name=data['name'], city=data['city'], age=data['age'])
+    new_customer = Customer(
+        name=sanitize_input(data['name']),
+        city=sanitize_input(data['city']),
+        age=data['age']
+    )
 
     try:
         # Add the new customer to the session and commit to save to the database
@@ -85,8 +93,8 @@ def edit_customer(customer_id):
         data = request.form
 
         # Update customer details
-        customer.name = data['name']
-        customer.city = data['city']
+        customer.name = sanitize_input(data.get('name', customer.name))
+        customer.city = sanitize_input(data.get('city', customer.city))
         customer.age = data['age']
 
         # Commit the changes to the database

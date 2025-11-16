@@ -4,11 +4,27 @@ from project.loans.models import Loan
 from project.loans.forms import CreateLoan
 from project.books.models import Book
 from project.customers.models import Customer
-
+import re
 
 # Blueprint for loans
 loans = Blueprint('loans', __name__, template_folder='templates', url_prefix='/loans')
 
+def validate_input(value):
+    if value is None:
+        return value
+
+    patterns = [
+        r"<script.*?.",
+        r"</script>",
+        r"on\w+=",
+        r"javascript:",
+    ]
+
+    for p in patterns:
+        if re.search(p, value, re.IGNORECASE):
+            raise ValueError("Invalid characters in input")
+
+    return value
 
 # Route to provide book and customer data in JSON format
 @loans.route('/books/json', methods=['GET'])
@@ -51,8 +67,8 @@ def create_loan():
     if request.method == 'POST':
         
         # Process form submission
-        customer_name = form.customer_name.data
-        book_name = form.book_name.data
+        customer_name = validate_input(form.customer_name.data)
+        book_name = validate_input(form.book_name.data)
         loan_date = form.loan_date.data
         return_date = form.return_date.data
 
